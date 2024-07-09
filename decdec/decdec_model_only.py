@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .modeling import (
+from modeling import (
     Backbone, 
     PixelDecoderLayerNoCA,
     PixelDecoderLayer,
@@ -19,8 +19,8 @@ from detectron2.structures import Instances, ImageList, Boxes
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.modeling.postprocessing import sem_seg_postprocess
 
-from .modeling.criterion import SetCriterion
-from .modeling.matcher import HungarianMatcher
+from modeling.criterion import SetCriterion
+from modeling.matcher import HungarianMatcher
 
 
 @META_ARCH_REGISTRY.register()
@@ -28,20 +28,20 @@ class DecDec(nn.Module):
     @configurable
     def __init__(
         self, 
-        *,
-        criterion: nn.Module,
-        object_mask_threshold: float,
-        overlap_threshold: float,
-        metadata,
-        size_divisibility: int,
-        sem_seg_postprocess_before_inference: bool,
-        pixel_mean: Tuple[float],
-        pixel_std: Tuple[float],
-        # inference
-        semantic_on: bool,
-        panoptic_on: bool,
-        instance_on: bool,
-        test_topk_per_image: int,
+        # *,
+        # criterion: nn.Module,
+        # object_mask_threshold: float,
+        # overlap_threshold: float,
+        # metadata,
+        # size_divisibility: int,
+        # sem_seg_postprocess_before_inference: bool,
+        # pixel_mean: Tuple[float],
+        # pixel_std: Tuple[float],
+        # # inference
+        # semantic_on: bool,
+        # panoptic_on: bool,
+        # instance_on: bool,
+        # test_topk_per_image: int,
 
         input_size = 256,
         # model parameters
@@ -58,27 +58,27 @@ class DecDec(nn.Module):
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.criterion = criterion
+        # self.criterion = criterion
         self.num_queries = num_queries
-        self.overlap_threshold = overlap_threshold
-        self.object_mask_threshold = object_mask_threshold
-        self.metadata = metadata
-        if size_divisibility < 0:
+        # self.overlap_threshold = overlap_threshold
+        # self.object_mask_threshold = object_mask_threshold
+        # self.metadata = metadata
+        # if size_divisibility < 0:
             # use backbone size_divisibility if not set
-            size_divisibility = self.backbone.size_divisibility
-        self.size_divisibility = size_divisibility
-        self.sem_seg_postprocess_before_inference = sem_seg_postprocess_before_inference
-        self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False)
-        self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1), False)
+            # size_divisibility = self.backbone.size_divisibility
+        # self.size_divisibility = size_divisibility
+        # self.sem_seg_postprocess_before_inference = sem_seg_postprocess_before_inference
+        # self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False)
+        # self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1), False)
 
         # additional args
-        self.semantic_on = semantic_on
-        self.instance_on = instance_on
-        self.panoptic_on = panoptic_on
-        self.test_topk_per_image = test_topk_per_image
+        # self.semantic_on = semantic_on
+        # self.instance_on = instance_on
+        # self.panoptic_on = panoptic_on
+        # self.test_topk_per_image = test_topk_per_image
 
-        if not self.semantic_on:
-            assert self.sem_seg_postprocess_before_inference
+        # if not self.semantic_on:
+        #     assert self.sem_seg_postprocess_before_inference
 
 
         self.pixel_decoder_layers = pixel_decoder_layers

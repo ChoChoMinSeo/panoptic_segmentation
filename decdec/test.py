@@ -1,4 +1,4 @@
-from decdec_model import DecDec
+from decdec_model_only import DecDec
 from utils.count_parameter import model_analysis
 
 model = DecDec()

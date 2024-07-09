@@ -128,4 +128,4 @@ class MultiheadCrossAttention(nn.Module):
         attn = attn.transpose(0,1).reshape(tgt_len, bsz, self.embed_dim).transpose(0,1)
             
         attn = self.out_proj(attn)
-        return attn, attn_weights
+        return attn, torch.mean(attn_weights.reshape(bsz,self.num_heads,tgt_len,src_len),dim=1).squeeze(1)
