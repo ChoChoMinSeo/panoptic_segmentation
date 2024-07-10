@@ -10,7 +10,7 @@ def add_dec2dec_config(cfg):
     # NOTE: configs from original maskformer
     # data config
     # select the dataset mapper
-    cfg.INPUT.DATASET_MAPPER_NAME ="coco_panoptic_kmaxdeeplab"
+    cfg.INPUT.DATASET_MAPPER_NAME ="mask_former_semantic"
 
     # Color augmentation
     cfg.INPUT.COLOR_AUG_SSD = False
@@ -37,6 +37,20 @@ def add_dec2dec_config(cfg):
     cfg.MODEL.DECDEC.DICE_WEIGHT = 1.0
     cfg.MODEL.DECDEC.MASK_WEIGHT = 20.0
 
+    cfg.MODEL.DECDEC.NO_OBJECT_WEIGHT = 1e-5
+    cfg.MODEL.DECDEC.CLASS_WEIGHT = 3.0
+    cfg.MODEL.DECDEC.DICE_WEIGHT = 3.0
+    cfg.MODEL.DECDEC.MASK_WEIGHT = 0.3
+    cfg.MODEL.DECDEC.INSDIS_WEIGHT = 1.0
+    cfg.MODEL.DECDEC.AUX_SEMANTIC_WEIGHT = 1.0
+    cfg.MODEL.DECDEC.USE_AUX_SEMANTIC_DECODER = False
+
+    cfg.MODEL.DECDEC.PIXEL_INSDIS_TEMPERATURE = 1.5
+    cfg.MODEL.DECDEC.PIXEL_INSDIS_SAMPLE_K = 4096
+    cfg.MODEL.DECDEC.AUX_SEMANTIC_TEMPERATURE = 2.0
+    cfg.MODEL.DECDEC.AUX_SEMANTIC_SAMPLE_K = 4096
+    cfg.MODEL.DECDEC.MASKING_VOID_PIXEL = True
+    
     # transformer config
     cfg.MODEL.DECDEC.NHEADS = 8
     cfg.MODEL.DECDEC.DROPOUT = 0.1
@@ -60,6 +74,7 @@ def add_dec2dec_config(cfg):
     cfg.MODEL.DECDEC.TEST.OVERLAP_THRESHOLD = 0.0
     cfg.MODEL.DECDEC.TEST.SEM_SEG_POSTPROCESSING_BEFORE_INFERENCE = False
 
+    cfg.MODEL.DECDEC.SHARE_FINAL_MATCHING = True
     # Sometimes `backbone.size_divisibility` is set to 0 for some backbone (e.g. ResNet)
     # you can use this config to override
     cfg.MODEL.DECDEC.SIZE_DIVISIBILITY = 32

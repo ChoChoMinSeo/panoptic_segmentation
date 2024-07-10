@@ -105,6 +105,7 @@ class DecDec(nn.Module):
 
         self.final_feature_conv = ConvBN(feature_dim[-1],feature_dim[-1],kernel_size=1, bias=False, norm='syncbn', act=None)
 
+        self.aux_seg_head = nn.ModuleList([Predictor(in_channel_pixel=feature_dim[i+1],in_channel_query=d_model,num_classes=num_classes+1) for i in range(4)])
         self.seg_head = Predictor(in_channel_pixel=feature_dim[-1],in_channel_query=d_model,num_classes=num_classes+1)
         self.class_proj = ConvBN(256, 256, kernel_size=1, bias=False, norm='syncbn', act='gelu',conv_type='1d')
         self.mask_proj = ConvBN(256, 256, kernel_size=1, bias=False, norm='syncbn', act='gelu',conv_type='1d')
@@ -121,12 +122,13 @@ class DecDec(nn.Module):
         mask_weight = cfg.MODEL.DECDEC.MASK_WEIGHT
 
         # building criterion
-        matcher = HungarianMatcher(
-            cost_class=class_weight,
-            cost_mask=mask_weight,
-            cost_dice=dice_weight,
-            num_points=cfg.MODEL.DECDEC.TRAIN_NUM_POINTS,
-        )
+        # matcher = HungarianMatcher(
+        #     cost_class=class_weight,
+        #     cost_mask=mask_weight,
+        #     cost_dice=dice_weight,
+        #     num_points=cfg.MODEL.DECDEC.TRAIN_NUM_POINTS,
+        # )
+        matcher = HungarianMatcher(masking_void_pixel=cfg.MODEL.DECDEC.MASKING_VOID_PIXEL)
 
         weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight}
 
@@ -139,15 +141,28 @@ class DecDec(nn.Module):
 
         losses = ["labels", "masks"]
 
+        # criterion = SetCriterion(
+        #     cfg.MODEL.NUM_CLASSES,
+        #     matcher=matcher,
+        #     weight_dict=weight_dict,
+        #     eos_coef=no_object_weight,
+        #     losses=losses,
+        #     num_points=cfg.MODEL.DECDEC.TRAIN_NUM_POINTS,
+        #     oversample_ratio=cfg.MODEL.DECDEC.OVERSAMPLE_RATIO,
+        #     importance_sample_ratio=cfg.MODEL.DECDEC.IMPORTANCE_SAMPLE_RATIO,
+        # )
         criterion = SetCriterion(
             cfg.MODEL.NUM_CLASSES,
             matcher=matcher,
             weight_dict=weight_dict,
             eos_coef=no_object_weight,
             losses=losses,
-            num_points=cfg.MODEL.DECDEC.TRAIN_NUM_POINTS,
-            oversample_ratio=cfg.MODEL.DECDEC.OVERSAMPLE_RATIO,
-            importance_sample_ratio=cfg.MODEL.DECDEC.IMPORTANCE_SAMPLE_RATIO,
+            share_final_matching=cfg.MODEL.DECDEC.SHARE_FINAL_MATCHING,
+            pixel_insdis_temperature=cfg.MODEL.DECDEC.PIXEL_INSDIS_TEMPERATURE,
+            pixel_insdis_sample_k=cfg.MODEL.DECDEC.PIXEL_INSDIS_SAMPLE_K,
+            aux_semantic_temperature=cfg.MODEL.DECDEC.AUX_SEMANTIC_TEMPERATURE,
+            aux_semantic_sample_k=cfg.MODEL.DECDEC.AUX_SEMANTIC_SAMPLE_K,
+            masking_void_pixel=cfg.MODEL.DECDEC.MASKING_VOID_PIXEL,
         )
 
         return {
@@ -193,17 +208,19 @@ class DecDec(nn.Module):
         bsz, c,h,w = images.tensor.shape
         feature = self.backbone(images.tensor)
         object_query = self.object_query.repeat(bsz,1,1)
-        attn_maps = []
-        # feature_maps = []
+        aux_outputs = []
         for idx,pix_layers in enumerate(self.pixel_decoder_layers):
             for i in range(pix_layers):
-                feature,attn_map = self.pixel_decoder[idx][i](feature,object_query)
-            if attn_map is not None:
-                attn_maps.append(attn_map)
-            # feature_maps.append(feature)
+                feature = self.pixel_decoder[idx][i](feature,object_query)
             for i in range(self.transformer_decoder_layers[idx]):
                 object_query = self.transformer_decoder[idx][i](feature,object_query)
 
+            object_query = object_query.transpose(1,2)
+            class_emb = self.class_proj(object_query)
+            mask_emb = self.mask_proj(object_query)
+            aux_outputs.append(self.aux_seg_head[idx](class_emb,mask_emb,feature))
+            object_query = object_query.transpose(1,2)
+        aux_outputs.reverse()
         feature = F.interpolate(feature,scale_factor=(4,4))
         feature = self.final_feature_conv(feature)
 
@@ -214,18 +231,14 @@ class DecDec(nn.Module):
         # predict
         prediction_result = self.seg_head(class_emb,mask_emb,feature)
 
-        predictions_class = []
-        predictions_mask = []
-        predictions_pixel_feature = []
-
-        predictions_class.append(prediction_result['class_logits'])
-        predictions_mask.append(prediction_result['mask_logits'])
-        predictions_pixel_feature.append(prediction_result['pixel_feature'])
+        # predictions_class.append(prediction_result['class_logits'])
+        # predictions_mask.append(prediction_result['mask_logits'])
+        # predictions_pixel_feature.append(prediction_result['pixel_feature'])
         outputs = {
-            'pred_logits': predictions_class[-1],
-            'pred_masks': predictions_mask[-1],
-            'pixel_feature': predictions_pixel_feature[-1],
-            'aux_results': attn_maps   
+            'pred_logits': prediction_result['pred_logits'],
+            'pred_masks': prediction_result['pred_masks'],
+            'pixel_feature': prediction_result['pixel_feature'],
+            'aux_outputs': aux_outputs
         }
 
         if self.training:

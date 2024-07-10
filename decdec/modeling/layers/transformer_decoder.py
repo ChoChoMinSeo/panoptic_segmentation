@@ -27,7 +27,7 @@ class TransformerDecoderLayer(nn.Module):
         feature = self.feature_conv(feature).transpose(1,2)
 
         residual = object_query
-        object_query,_ = self.cross_attention(query = object_query, key = feature, value = feature)
+        object_query = self.cross_attention(query = object_query, key = feature, value = feature)
         object_query = self.ln_ca(object_query+residual)
 
         residual = object_query

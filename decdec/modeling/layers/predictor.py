@@ -127,6 +127,6 @@ class Predictor(nn.Module):
 
 
         return {
-            'class_logits': cluster_class_logits,
-            'mask_logits': mask_logits,
+            'pred_logits': cluster_class_logits,
+            'pred_masks': mask_logits,
             'pixel_feature': pixel_space_normalized_feature}

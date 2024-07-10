@@ -47,11 +47,13 @@ from detectron2.utils.logger import setup_logger
 from decdec import (
     COCOInstanceNewBaselineDatasetMapper,
     COCOPanopticNewBaselineDatasetMapper,
-    PanoptickMaXDeepLabDatasetMapper,
+    # InstanceSegEvaluator,
+    MaskFormerInstanceDatasetMapper,
+    MaskFormerPanopticDatasetMapper,
+    MaskFormerSemanticDatasetMapper,
     SemanticSegmentorWithTTA,
     add_dec2dec_config,
 )
-# from kmax_deeplab.config import add_kmax_deeplab_config
 
 class Trainer(DefaultTrainer):
     """
@@ -99,20 +101,29 @@ class Trainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-
-        if cfg.INPUT.DATASET_MAPPER_NAME == "coco_instance_lsj":
+        if cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_semantic":
+            mapper = MaskFormerSemanticDatasetMapper(cfg, True)
+            return build_detection_train_loader(cfg, mapper=mapper)
+        # Panoptic segmentation dataset mapper
+        elif cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_panoptic":
+            mapper = MaskFormerPanopticDatasetMapper(cfg, True)
+            return build_detection_train_loader(cfg, mapper=mapper)
+        # Instance segmentation dataset mapper
+        elif cfg.INPUT.DATASET_MAPPER_NAME == "mask_former_instance":
+            mapper = MaskFormerInstanceDatasetMapper(cfg, True)
+            return build_detection_train_loader(cfg, mapper=mapper)
+        # coco instance segmentation lsj new baseline
+        elif cfg.INPUT.DATASET_MAPPER_NAME == "coco_instance_lsj":
             mapper = COCOInstanceNewBaselineDatasetMapper(cfg, True)
             return build_detection_train_loader(cfg, mapper=mapper)
         # coco panoptic segmentation lsj new baseline
-        elif cfg.INPUT.DATASET_MAPPER_NAME == "KMAX_DEEPLAB_panoptic":
-            mapper = PanoptickMaXDeepLabDatasetMapper(cfg, True)
-            return build_detection_train_loader(cfg, mapper=mapper)
         elif cfg.INPUT.DATASET_MAPPER_NAME == "coco_panoptic_lsj":
             mapper = COCOPanopticNewBaselineDatasetMapper(cfg, True)
             return build_detection_train_loader(cfg, mapper=mapper)
         else:
             mapper = None
             return build_detection_train_loader(cfg, mapper=mapper)
+
 
     @classmethod
     def build_lr_scheduler(cls, cfg, optimizer):

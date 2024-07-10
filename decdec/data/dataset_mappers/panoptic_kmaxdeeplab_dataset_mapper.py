@@ -183,6 +183,7 @@ class PanoptickMaXDeepLabDatasetMapper:
             "image_size": cfg.INPUT.IMAGE_SIZE,
             "dataset_name": {
                 'coco_panoptic_lsj': 'coco',
+                'coco_panoptic_kmaxdeeplab':'coco',
                 'ade20k_panoptic_lsj': 'ade20k',
                 'cityscapes_panoptic_lsj': 'cityscapes',
             }[cfg.INPUT.DATASET_MAPPER_NAME]
@@ -231,7 +232,7 @@ class PanoptickMaXDeepLabDatasetMapper:
             # In this way, we can masking out the padded pixels values to 0 after normalization, which aligns the
             # behavior between training and testing.
             padded_pan_seg_gt = np.zeros((self.image_size[0], self.image_size[1]), dtype=pan_seg_gt.dtype)
-            is_real_pixels = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.bool)
+            is_real_pixels = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.bool_)
             padded_pan_seg_gt[offset_h:offset_h+new_h, offset_w:offset_w+new_w] = pan_seg_gt
             is_real_pixels[offset_h:offset_h+new_h, offset_w:offset_w+new_w] = True
             dataset_dict["is_real_pixels"] = is_real_pixels

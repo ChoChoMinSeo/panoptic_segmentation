@@ -39,7 +39,7 @@ class PixelDecoderLayer(nn.Module):
 
 
         residual = feature
-        feature,attn_map = self.cross_attention(query = feature, key = object_query, value = object_query)
+        feature = self.cross_attention(query = feature, key = object_query, value = object_query)
         feature = self.ln_ca(feature+residual)
 
         residual = feature
@@ -56,7 +56,7 @@ class PixelDecoderLayer(nn.Module):
             feature = F.interpolate(feature.reshape(b,c//2,h,w), scale_factor=(2,2),mode='bilinear')
         else:
             feature = feature.reshape(b,c,h,w)
-        return feature, attn_map
+        return feature
         
 class PixelDecoderLayerNoCA(nn.Module):
     def __init__(
@@ -104,7 +104,7 @@ class PixelDecoderLayerNoCA(nn.Module):
         else:
             feature = feature.reshape(b,c,h,w)
 
-        return feature,None
+        return feature
         
 # model = PixelDecoderLayer(query_dim=2048,d_model=256,num_heads=8,ffn_dim=2048,interpolate=False)
 # # model = PixelDecoderLayerNoCA(query_dim=2048,d_model=256,num_heads=8,ffn_dim=2048)
