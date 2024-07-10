@@ -20,13 +20,7 @@ def setup():
     add_deeplab_config(cfg)
     add_dec2dec_config(cfg)
     cfg.merge_from_file("decdec/configs/coco/panoptic-segmentation/dec2dec_R50_bs16_50ep.yaml")
-    cfg.MODEL.WEIGHTS = 'model_final.pth'
-    cfg.MODEL.DECDEC.TEST.SEMANTIC_ON = True
-    cfg.MODEL.DECDEC.TEST.INSTANCE_ON = True
-    cfg.MODEL.DECDEC.TEST.PANOPTIC_ON = True
-    cfg.INPUT.MIN_SIZE_TEST = 256
-    cfg.INPUT.MAX_SIZE_TEST = 256
-    cfg.INPUT.IMAGE_SIZE=256
+    cfg.MODEL.WEIGHTS = 'output/model_final.pth'
     predictor = DefaultPredictor(cfg)
     coco_metadata = MetadataCatalog.get("coco_2017_val_panoptic")
     return predictor, coco_metadata
